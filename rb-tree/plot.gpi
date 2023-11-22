@@ -1,0 +1,17 @@
+#!/usr/bin/gnuplot -persist
+
+set terminal svg enhanced background rgb 'white'
+set termoption enhanced
+set terminal svg size 800,600 font "Arial, 16"
+set output "red-black tree lookup.svg"
+
+set style line 1 lc rgb "red" lt 1 lw 4 pt 9 ps 1
+set style line 2 lc rgb "green" lt 1 lw 4 pt 6 ps 1
+
+set xlabel "Количество элементов"
+set ylabel "Время выполнения, с" rotate by 90
+
+set datafile separator ";"
+
+plot log(x / 250) / 350 with linespoint ls 2, \
+    "graphic.csv" using 1:2 title "Red-black tree lookup" with linespoint ls 1 
