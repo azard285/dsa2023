@@ -1,51 +1,89 @@
 #include <iostream>
+#include <vector>
+
 using namespace std;
 
-const int MAXN = 100005; // Максимальный размер массива
-int segtree[4*MAXN]; // Объявление массива для построения сегментного дерева
+struct SegmentTreeNode {
+    int sum;
 
-void build(int arr[], int v, int tl, int tr) {
-    if (tl == tr) { // Если левая и правая границы совпадают
-        segtree[v] = arr[tl]; // Присваиваем значению в узле сегментного дерева значение из массива
+    SegmentTreeNode(int s) : sum(s) {}
+};
+
+
+void buildTree(int* array, SegmentTreeNode* tree, int node, int start, int end) {
+    if (start == end) {
+       tree[node] = SegmentTreeNode(array[start]);
     } else {
-        int tm = (tl + tr) / 2; // Находим середину отрезка
-        build(arr, v*2, tl, tm); // Рекурсивно строим левое поддерево
-        build(arr, v*2+1, tm+1, tr); // Рекурсивно строим правое поддерево
-        segtree[v] = segtree[v*2] + segtree[v*2+1]; // Записываем в узел сумму значений левого и правого поддеревьев
+        int mid = (start + end) / 2;
+        buildTree(array, tree, 2 * node + 1, start, mid);
+        buildTree(array, tree, 2 * node + 2, mid + 1, end);
+        tree[node] = SegmentTreeNode(tree[2 * node + 1].sum + tree[2 * node + 2].sum);
     }
 }
 
-int sum(int v, int tl, int tr, int l, int r) {
-    if (l > r) // Если левая граница больше правой
-        return 0; // Возвращаем 0
-    if (l == tl && r == tr) // Если запрашиваемый отрезок совпадает с текущим отрезком
-        return segtree[v]; // Возвращаем значение в узле сегментного дерева
-    int tm = (tl + tr) / 2; // Находим середину отрезка
-    return sum(v*2, tl, tm, l, min(r, tm)) // Рекурсивно ищем сумму в левом поддереве
-           + sum(v*2+1, tm+1, tr, max(l, tm+1), r); // Рекурсивно ищем сумму в правом поддереве
+void update(int index, int newValue, SegmentTreeNode* tree, int node, int start, int end) {
+    if (start == end) {
+        tree[node].sum = newValue;
+    } else {
+        int mid = (start + end) / 2;
+        if (index <= mid) {
+            update(index, newValue, tree, 2 * node + 1, start, mid);
+        } else {
+            update(index, newValue, tree, 2 * node + 2, mid + 1, end);
+        }
+        tree[node].sum = tree[2 * node + 1].sum + tree[2 * node + 2].sum;
+    }
 }
 
-void update(int v, int tl, int tr, int pos, int new_val) {
-    if (tl == tr) { // Если левая и правая границы совпадают
-        segtree[v] = new_val; // Обновляем значение в узле сегментного дерева
+int query(int left, int right, const SegmentTreeNode* tree, int node, int start, int end) {
+    if (left > end || right < start) {
+        return 0;
+    }
+    if (left <= start && right >= end) {
+        return tree[node].sum;
+    }
+    int mid = (start + end) / 2;
+    int leftSum = query(left, right, tree, 2 * node + 1, start, mid);
+    int rightSum = query(left, right, tree, 2 * node + 2, mid + 1, end);
+    return leftSum + rightSum;
+}
+void Print(const SegmentTreeNode* tree, int node, int start, int end, int level = 0) {
+    if (start == end) {
+        for (int i = 0; i < level; ++i) {
+            cout << "  ";
+        }
+        cout << "[" << start << "] = " << tree[node].sum << endl;
     } else {
-        int tm = (tl + tr) / 2; // Находим середину отрезка
-        if (pos <= tm) // Если позиция находится в левом поддереве
-            update(v*2, tl, tm, pos, new_val); // Рекурсивно обновляем значение в левом поддереве
-        else
-            update(v*2+1, tm+1, tr, pos, new_val); // Рекурсивно обновляем значение в правом поддереве
-        segtree[v] = segtree[v*2] + segtree[v*2+1]; // Обновляем значение в узле как сумму значений левого и правого поддеревьев
+        for (int i = 0; i < level; ++i) {
+            cout << "  ";
+        }
+        cout << "[" << start << ", " << end << "] = " << tree[node].sum << endl;
+
+        int mid = (start + end) / 2;
+        Print(tree, 2 * node + 1, start, mid, level + 1);
+        Print(tree, 2 * node + 2, mid + 1, end, level + 1);
     }
 }
 
 int main() {
-    int n;
-    cin >> n; // Вводим размер массива
-    int arr[n]; // Объявляем массив
-    for (int i = 0; i < n; i++) {
-        cin >> arr[i]; // Вводим элементы массива
-    }
-    build(arr, 1, 0, n-1); // Строим сегментное дерево
-    // Теперь можно использовать функции sum и update для выполнения запросов на отрезках и обновления значений в сегментном дереве
+    int array[] = {1, 3, 5, 7, 9, 11 };
+    int n = sizeof(array) / sizeof(array[0]);
+    SegmentTreeNode* tree;
+
+    buildTree(array, tree, 0, 0, n - 1);
+
+    cout << "Segment Tree:" << endl;
+    Print(tree, 0, 0, n - 1);
+
+     int sum = query(2, 5, tree, 0, 0, n - 1);
+    cout << "Sum of elements in range [2, 5]: " << sum << endl;
+
+    update(3, 10, tree, 0, 0, n - 1);
+
+    sum = query(2, 5, tree, 0, 0, n - 1);
+    cout << "Sum of elements in range [2, 5] after update: " << sum << endl;
+
+    delete[] tree;
+
     return 0;
 }
